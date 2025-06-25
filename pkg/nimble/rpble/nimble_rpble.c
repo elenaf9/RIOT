@@ -19,7 +19,7 @@
  */
 
 #ifndef CONFIG_RPBLE_CONNECT
-#  define CONFIG_RPBLE_CONNECT 1
+#  define CONFIG_RPBLE_CONNECT !IS_USED(MODULE_NIMBLE_AUTOCONN)
 #endif
 
 #include "net/gnrc/rpl.h"
@@ -27,6 +27,10 @@
 #include "nimble_netif.h"
 #include "nimble_rpble.h"
 #include "host/ble_gap.h"
+
+#if IS_USED(MODULE_NIMBLE_AUTOCONN)
+#  include "nimble_autoconn.h"
+#endif
 
 #if CONFIG_RPBLE_CONNECT
 #  include "nimble_rpble_connect.h"
@@ -84,8 +88,13 @@ int nimble_rpble_param_update(const nimble_rpble_cfg_t *cfg)
     nimble_rpble_connect_param_update(cfg);
 #endif
 
-    /* register event callback */
+#if IS_USED(MODULE_NIMBLE_AUTOCONN)
+    /* inject event callback into autoconnect module */
+    nimble_autoconn_eventcb(_on_netif_evt);
+#else
+    /* register event callback directly*/
     nimble_netif_eventcb(_on_netif_evt);
+#endif
 
     return 0;
 }
