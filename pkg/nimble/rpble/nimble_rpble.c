@@ -213,6 +213,23 @@ static void _parent_connect(struct ble_npl_event *ev)
     _current_parent = res;
 }
 
+static void _parent_lost(void)
+{
+    nimble_netif_accept_stop();
+
+    _current_parent = PARENT_NONE;
+
+    if (_local_rpl_ctx.rank != 0) {
+        /* clear RPL context */
+        gnrc_rpl_instance_t *inst = gnrc_rpl_instance_get(_local_rpl_ctx.inst_id);
+        gnrc_rpl_local_repair(&inst->dodag);
+        memset(&_local_rpl_ctx, 0, sizeof(_local_rpl_ctx));
+    }
+
+    /* back to 0, now we need to find a new parent... */
+    _parent_find();
+}
+
 static void _on_netif_evt(int handle, nimble_netif_event_t event,
                           const uint8_t *addr)
 {
@@ -232,20 +249,14 @@ static void _on_netif_evt(int handle, nimble_netif_event_t event,
             break;
         case NIMBLE_NETIF_CLOSED_MASTER:
             /* parent lost */
-            nimble_netif_accept_stop();
-            _current_parent = PARENT_NONE;
-            /* back to 0, now we need to find a new parent... */
-            _parent_find();
-            break;
+            _parent_lost();
         case NIMBLE_NETIF_CLOSED_SLAVE:
             /* child lost */
             _children_accept();
             break;
         case NIMBLE_NETIF_ABORT_MASTER:
             /* parent selection aborted */
-            nimble_netif_accept_stop();
-            _current_parent = PARENT_NONE;
-            _parent_find();
+            _parent_lost();
             break;
         case NIMBLE_NETIF_ABORT_SLAVE:
             /* child selection aborted */
