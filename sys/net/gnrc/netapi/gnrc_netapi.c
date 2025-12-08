@@ -84,7 +84,7 @@ static inline int _snd_rcv_mbox(mbox_t *mbox, uint16_t type, gnrc_pktsnip_t *pkt
 }
 #endif
 
-int _dispatch_single(gnrc_netreg_entry_t *sendto, uint16_t cmd, void *data)
+static int _dispatch_single(gnrc_netreg_entry_t *sendto, uint16_t cmd, void *data)
 {
     int status = 0;
 
