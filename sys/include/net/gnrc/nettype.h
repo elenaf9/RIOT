@@ -126,7 +126,8 @@ typedef enum {
      * }
      */
     GNRC_NETTYPE_L2_DISCOVERY,  /**< Layer 2 node discovery */
-    GNRC_NETTYPE_L3_ROUTING,    /**< Layer 3 routing info */
+    GNRC_NETTYPE_L3_ROUTING,    /**< Layer 3 neighbor info that is relevant for
+                                     routing */
     /** @} */
 
     /**
