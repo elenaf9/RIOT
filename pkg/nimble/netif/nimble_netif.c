@@ -41,6 +41,10 @@
 #include "mem/mem.h"
 #include <string.h>
 
+#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
+#include "net/gnrc/netapi/notify.h"
+#endif /* MODULE_GNRC_NETAPI_NOTIFY */
+
 #define ENABLE_DEBUG            0
 #include "debug.h"
 
@@ -332,6 +336,7 @@ end:
     ble_l2cap_recv_ready(event->receive.chan, rxb);
 }
 
+#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
 /**
  * @brief   Sends a netapi notification for a connection event.
  *
@@ -350,6 +355,7 @@ static inline void _dispatch_connection_event(netapi_notify_t notify, uint8_t *a
     gnrc_netapi_notify(GNRC_NETTYPE_L2_DISCOVERY, GNRC_NETREG_DEMUX_CTX_ALL,
                        notify, &event, sizeof(netapi_notify_l2_connection_t));
 }
+#endif /* MODULE_GNRC_NETAPI_NOTIFY */
 
 static int _on_l2cap_client_evt(struct ble_l2cap_event *event, void *arg)
 {

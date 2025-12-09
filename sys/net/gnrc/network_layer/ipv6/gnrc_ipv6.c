@@ -11,7 +11,6 @@
  *
  * @file
  */
-#include "net/gnrc/netapi/notify.h"
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -33,6 +32,10 @@
 #include "net/gnrc/netif/internal.h"
 #include "net/gnrc/ipv6/whitelist.h"
 #include "net/gnrc/ipv6/blacklist.h"
+
+#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
+#include "net/gnrc/netapi/notify.h"
+#endif /* MODULE_GNRC_NETAPI_NOTIFY */
 
 #ifdef MODULE_GNRC_IPV6_EXT_FRAG
 #include "net/gnrc/ipv6/ext/frag.h"
@@ -196,6 +199,7 @@ static inline bool _find_entry_in_nc(uint8_t *l2addr, uint8_t l2addr_len, ipv6_a
     return false;
 }
 
+#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
 /**
  * @brief   Handle a link-layer connection-established event.
  *
@@ -230,6 +234,8 @@ static inline void _on_l2_connected(kernel_pid_t if_pid, uint8_t *l2addr, uint8_
  */
 static inline void _on_l2_disconnected(kernel_pid_t if_pid, uint8_t *l2addr, uint8_t l2addr_len)
 {
+    (void)if_pid;
+
     ipv6_addr_t ipv6;
 
     /* Inform routing layer of unreachable neighbor. This must be done *before* removing
@@ -272,6 +278,7 @@ static inline void _netapi_notify_event(gnrc_netapi_notify_t *notify)
         break;
     }
 }
+#endif /* MODULE_GNRC_NETAPI_NOTIFY */
 
 static void *_event_loop(void *args)
 {

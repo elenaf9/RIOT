@@ -42,6 +42,10 @@
 #include "net/gnrc/rpl/p2p_dodag.h"
 #endif
 
+#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
+#include "net/gnrc/netapi/notify.h"
+#endif /* MODULE_GNRC_NETAPI_NOTIFY */
+
 #define ENABLE_DEBUG 0
 #include "debug.h"
 
@@ -286,6 +290,7 @@ static void _parent_timeout(gnrc_rpl_parent_t *parent)
     evtimer_add_msg(&gnrc_rpl_evtimer, &parent->timeout_event, gnrc_rpl_pid);
 }
 
+#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
 /**
  * @brief   Handles the event that a new neighbor was discovered and is reachable.
  *
@@ -343,6 +348,7 @@ static inline void _netapi_notify_event(gnrc_netapi_notify_t *notify)
         break;
     }
 }
+#endif /* MODULE_GNRC_NETAPI_NOTIFY */
 
 static void *_event_loop(void *args)
 {
