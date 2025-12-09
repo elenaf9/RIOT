@@ -29,13 +29,10 @@
 #include "utlist.h"
 
 #include "net/gnrc/ipv6/nib.h"
+#include "net/gnrc/netapi/notify.h"
 #include "net/gnrc/netif/internal.h"
 #include "net/gnrc/ipv6/whitelist.h"
 #include "net/gnrc/ipv6/blacklist.h"
-
-#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
-#include "net/gnrc/netapi/notify.h"
-#endif /* MODULE_GNRC_NETAPI_NOTIFY */
 
 #ifdef MODULE_GNRC_IPV6_EXT_FRAG
 #include "net/gnrc/ipv6/ext/frag.h"
@@ -175,7 +172,6 @@ static void _dispatch_next_header(gnrc_pktsnip_t *pkt, unsigned nh,
     }
 }
 
-#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
 /**
  * @brief   Find entry in NIB neighbor cache.
  *
@@ -258,6 +254,10 @@ static inline void _on_l2_disconnected(kernel_pid_t if_pid, uint8_t *l2addr, uin
  */
 static inline void _netapi_notify_event(gnrc_netapi_notify_t *notify)
 {
+    if (!IS_USED(MODULE_GNRC_NETAPI_NOTIFY)) {
+        return;
+    }
+
     netapi_notify_l2_connection_t data;
     netapi_notify_t type = notify->event;
 
@@ -278,7 +278,6 @@ static inline void _netapi_notify_event(gnrc_netapi_notify_t *notify)
         break;
     }
 }
-#endif /* MODULE_GNRC_NETAPI_NOTIFY */
 
 static void *_event_loop(void *args)
 {
@@ -287,7 +286,7 @@ static void *_event_loop(void *args)
     /* Register entry for messages in IPv6 context. */
     gnrc_netreg_entry_t me_ipv6_reg = GNRC_NETREG_ENTRY_INIT_PID(GNRC_NETREG_DEMUX_CTX_ALL,
                                                                  thread_getpid());
-#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
+#ifdef MODULE_GNRC_NETAPI_NOTIFY
     /* Register entry for messages in L2 discovery context. */
     gnrc_netreg_entry_t me_discovery_reg = GNRC_NETREG_ENTRY_INIT_PID(GNRC_NETREG_DEMUX_CTX_ALL,
                                                                       thread_getpid());
@@ -304,7 +303,7 @@ static void *_event_loop(void *args)
     /* Register interest in all IPv6 packets. */
     gnrc_netreg_register(GNRC_NETTYPE_IPV6, &me_ipv6_reg);
 
-#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
+#ifdef MODULE_GNRC_NETAPI_NOTIFY
     /* Register interest in L2 neighbor discovery info. */
     gnrc_netreg_register(GNRC_NETTYPE_L2_DISCOVERY, &me_discovery_reg);
 #endif /* MODULE_GNRC_NETAPI_NOTIFY */
@@ -334,13 +333,10 @@ static void *_event_loop(void *args)
                 reply.content.value = -ENOTSUP;
                 msg_reply(&msg, &reply);
                 break;
-#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
             case GNRC_NETAPI_MSG_TYPE_NOTIFY:
                 DEBUG("ipv6: GNRC_NETAPI_MSG_TYPE_NOTIFY received\n");
                 _netapi_notify_event(msg.content.ptr);
                 break;
-#endif /* MODULE_GNRC_NETAPI_NOTIFY */
-
 #ifdef MODULE_GNRC_IPV6_EXT_FRAG
             case GNRC_IPV6_EXT_FRAG_RBUF_GC:
                 gnrc_ipv6_ext_frag_rbuf_gc();

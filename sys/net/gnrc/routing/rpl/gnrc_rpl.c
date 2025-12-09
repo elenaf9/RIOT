@@ -22,6 +22,7 @@
 
 #include "net/icmpv6.h"
 #include "net/ipv6.h"
+#include "net/gnrc/netapi/notify.h"
 #include "net/gnrc/netif/internal.h"
 #include "net/gnrc.h"
 #include "mutex.h"
@@ -42,10 +43,6 @@
 #include "net/gnrc/rpl/p2p_dodag.h"
 #endif
 
-#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
-#include "net/gnrc/netapi/notify.h"
-#endif /* MODULE_GNRC_NETAPI_NOTIFY */
-
 #define ENABLE_DEBUG 0
 #include "debug.h"
 
@@ -65,7 +62,7 @@ static msg_t _lt_msg = { .type = GNRC_RPL_MSG_TYPE_LIFETIME_UPDATE };
 static msg_t _msg_q[GNRC_RPL_MSG_QUEUE_SIZE];
 
 static gnrc_netreg_entry_t _me_icmpv6_reg;
-#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
+#ifdef MODULE_GNRC_NETAPI_NOTIFY
 static gnrc_netreg_entry_t _me_routing_reg;
 #endif /* MODULE_GNRC_NETAPI_NOTIFY*/
 
@@ -115,7 +112,7 @@ kernel_pid_t gnrc_rpl_init(kernel_pid_t if_pid)
         _me_icmpv6_reg.target.pid = gnrc_rpl_pid;
         gnrc_netreg_register(GNRC_NETTYPE_ICMPV6, &_me_icmpv6_reg);
 
-#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
+#ifdef MODULE_GNRC_NETAPI_NOTIFY
         /* Register interest in L3 routing info. */
         _me_routing_reg.demux_ctx = GNRC_NETREG_DEMUX_CTX_ALL;
         _me_routing_reg.target.pid = gnrc_rpl_pid;
@@ -290,7 +287,6 @@ static void _parent_timeout(gnrc_rpl_parent_t *parent)
     evtimer_add_msg(&gnrc_rpl_evtimer, &parent->timeout_event, gnrc_rpl_pid);
 }
 
-#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
 /**
  * @brief   Handles the event that a new neighbor was discovered and is reachable.
  *
@@ -327,6 +323,10 @@ static inline void _handle_unreachable_neighbor(ipv6_addr_t *addr)
  */
 static inline void _netapi_notify_event(gnrc_netapi_notify_t *notify)
 {
+    if (!IS_USED(MODULE_GNRC_NETAPI_NOTIFY)) {
+        return;
+    }
+
     ipv6_addr_t neigh_addr;
     netapi_notify_t type = notify->event;
 
@@ -348,7 +348,6 @@ static inline void _netapi_notify_event(gnrc_netapi_notify_t *notify)
         break;
     }
 }
-#endif /* MODULE_GNRC_NETAPI_NOTIFY */
 
 static void *_event_loop(void *args)
 {
@@ -419,12 +418,10 @@ static void *_event_loop(void *args)
                 reply.content.value = -ENOTSUP;
                 msg_reply(&msg, &reply);
                 break;
-#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
             case GNRC_NETAPI_MSG_TYPE_NOTIFY:
                 DEBUG("RPL: GNRC_NETAPI_MSG_TYPE_NOTIFY received\n");
                 _netapi_notify_event(msg.content.ptr);
                 break;
-#endif /* MODULE_GNRC_NETAPI_NOTIFY */
             default:
                 break;
         }
