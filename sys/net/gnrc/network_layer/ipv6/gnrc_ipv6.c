@@ -175,6 +175,7 @@ static void _dispatch_next_header(gnrc_pktsnip_t *pkt, unsigned nh,
     }
 }
 
+#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
 /**
  * @brief   Find entry in NIB neighbor cache.
  *
@@ -199,7 +200,6 @@ static inline bool _find_entry_in_nc(uint8_t *l2addr, uint8_t l2addr_len, ipv6_a
     return false;
 }
 
-#if IS_USED(MODULE_GNRC_NETAPI_NOTIFY)
 /**
  * @brief   Handle a link-layer connection-established event.
  *
