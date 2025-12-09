@@ -173,6 +173,7 @@ static void _on_scan_evt(uint8_t type, const ble_addr_t *addr,
 static void _parent_find(void)
 {
     _psel.score = SCORE_NONE;
+    memset(&_local_rpl_ctx, 0, sizeof(_local_rpl_ctx));
     nimble_scanner_start();
     ble_npl_callout_reset(&_evt_eval, _eval_itvl);
 }
