@@ -343,7 +343,7 @@ end:
  * @param[in] notify    The type of notification event.
  * @param[in] addr      BLE address of the node that (dis-)connected.
  */
-static inline void _dispatch_connection_event(netapi_notify_t notify, uint8_t *addr)
+static inline void _dispatch_connection_event(netapi_notify_t notify, const void *addr)
 {
     netapi_notify_l2_connection_t event = {
         .l2addr_len = BLE_ADDR_LEN,
