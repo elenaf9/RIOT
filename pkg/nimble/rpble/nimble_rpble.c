@@ -161,10 +161,8 @@ static void _on_scan_evt(uint8_t type, const ble_addr_t *addr,
         return;
     }
 
-    /* we consider only parents with a lower rank and remember the one with the
-     * best score */
-    if (((_local_rpl_ctx.rank == 0) || (_local_rpl_ctx.rank > rank)) &&
-        (score > _psel.score)) {
+    /* we remember the parent with the best score */
+    if (score > _psel.score) {
         _psel.score = score;
         memcpy(&_psel.addr, addr, sizeof(ble_addr_t));
     }
