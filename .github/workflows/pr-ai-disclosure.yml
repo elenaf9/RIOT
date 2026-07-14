@@ -1,0 +1,65 @@
+name: Check AI disclosure in PRs
+
+on:
+  workflow_dispatch:
+  pull_request_target:
+    types: [opened, reopened, edited]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  check-disclosure:
+    name: Check AI disclosure section
+    runs-on: ubuntu-latest
+    steps:
+      - id: labels
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const hasAiLabel = context.payload.pull_request.labels.some(
+              l => l.name.startsWith("AI: ")
+            );
+            core.setOutput("has_ai_label", hasAiLabel);
+
+      - name: Validate that PR body contains AI disclosure
+        id: check
+        if: steps.labels.outputs.has_ai_label != 'true'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            # Pull Request body without comments.
+            const body = (context.payload.pull_request.body || "")
+              .replace(/\r/g, "")
+              .replace(/<!--[\s\S]*?-->/g, "");
+
+            const heading = `##+\\s+Declaration of AI-Tools \\/ LLMs usage:?`;
+            const sectionRegex = new RegExp(
+              `^${heading}\\s*$([\\s\\S]*?)(?=^##+\\s+|$)`,
+              "m"
+            );
+
+            const match = body.match(sectionRegex);
+            const missing = !match || match[1].trim().length === 0;
+
+            core.setOutput("is_declaration_missing", missing);
+
+      - name: Comment on PR and add labels
+        uses: actions/github-script@v9
+        if: steps.check.outputs.is_declaration_missing == 'true'
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const user = context.payload.pull_request.user.login;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `Hey @${user}, thank you for your contribution to RIOT! Please note that we require for all PRs to RIOT a declaration of AI-Tools / LLMs usage. It appears as if this section is missing in your PR. Please copy and fill in the section from .github/PULL_REQUEST_TEMPLATE.md. Thank you!`
+            });
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              labels: ["AI: None Stated", "State: waiting for author"]
+            });
