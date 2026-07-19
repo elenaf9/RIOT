@@ -55,7 +55,6 @@ typedef enum {
      *
      */
     UNICOAP_CLIENT_FLAG_RELIABLE = 0x0001,
-
     /**
      * @brief If present on a callback-based function, the callback will be called asynchronously for every
      * CoAP Observe notification arriving at the client.
@@ -65,6 +64,7 @@ typedef enum {
      * @see [Observe (RFC 7641)](https://datatracker.ietf.org/doc/html/rfc7641)
      */
     UNICOAP_CLIENT_FLAG_OBSERVE = 0x0100,
+    UNICOAP_CLIENT_FLAG_MULTICAST = 0x1000,
 } unicoap_client_flags_t;
 
 /**

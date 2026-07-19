@@ -172,6 +172,19 @@ typedef struct {
         unicoap_scheduled_event_t timeout;
     } exchange;
 
+
+    /**
+     * @brief Multicast state
+     *
+     * State tracked by the request-response layer for multicast operations.
+     */
+    struct {
+        /**
+         * @brief Timeout
+         */
+        unicoap_scheduled_event_t timeout;
+    } multicast;
+
     /**
      * @brief Messaging state
      *
@@ -202,6 +215,10 @@ typedef struct {
  */
 static inline unicoap_memo_t* unicoap_memo_of_timeout(unicoap_scheduled_event_t* timeout) {
     return container_of(timeout, unicoap_memo_t, exchange.timeout);
+}
+
+static inline unicoap_memo_t* unicoap_memo_of_multicast_timeout(unicoap_scheduled_event_t* timeout) {
+    return container_of(timeout, unicoap_memo_t, multicast.timeout);
 }
 
 /**
@@ -403,6 +420,9 @@ static inline unicoap_client_memo_t* unicoap_client_memo_of_event(event_t* event
  */
 static inline unicoap_client_memo_t* unicoap_client_memo_of_timeout(unicoap_scheduled_event_t* timeout) {
     return unicoap_client_memo_of_super(unicoap_memo_of_timeout(timeout));
+}
+static inline unicoap_client_memo_t* unicoap_client_memo_of_multicast_timeout(unicoap_scheduled_event_t* timeout) {
+    return unicoap_client_memo_of_super(unicoap_memo_of_multicast_timeout(timeout));
 }
 
 /**

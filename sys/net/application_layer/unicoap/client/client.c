@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <alloca.h>
 
+#include "net/ipv6/addr.h"
 #include "ztimer.h"
 #include "mutex.h"
 #include "sema.h"
@@ -33,6 +34,11 @@ static void _on_response_timeout(unicoap_scheduled_event_t* timeout) {
     _CLIENT_DEBUG("response timeout\n");
     unicoap_client_callback_failure(unicoap_client_memo_of_timeout(timeout), -ETIMEDOUT);
     unicoap_client_memo_free(unicoap_client_memo_of_timeout(timeout));
+}
+
+static void _on_multicast_response_timeout(unicoap_scheduled_event_t* timeout) {
+    _CLIENT_DEBUG("multicast window closed\n");
+    unicoap_client_memo_free(unicoap_client_memo_of_multicast_timeout(timeout));
 }
 
 int unicoap_client_callback_success(unicoap_client_memo_t* memo, const unicoap_packet_t* packet,
@@ -82,7 +88,9 @@ int unicoap_client_process_response(unicoap_packet_t* packet, unicoap_client_mem
     res = unicoap_client_callback_success(memo, packet, UNICOAP_BLOCK_OPTION_NONE);
     _UNICOAP_CHECKPOINT;
 
-    if (!(IS_USED(MODULE_UNICOAP_CLIENT_OBSERVATION) && memo->flags & UNICOAP_CLIENT_FLAG_OBSERVE)) {
+    if ((memo->flags && (1 << UNICOAP_CLIENT_FLAG_MULTICAST)) == 0 ) {
+        _CLIENT_DEBUG("expecting multiple replies for multicast request, not releasing memo\n");
+    } else if (!(IS_USED(MODULE_UNICOAP_CLIENT_OBSERVATION) && memo->flags & UNICOAP_CLIENT_FLAG_OBSERVE)) {
         unicoap_client_memo_free(memo);
     } else {
         /* We keep the memo, but can disregard any messaging-layer state. */
@@ -185,6 +193,25 @@ int unicoap_client_send_request_body(unicoap_message_t* request,
         unicoap_event_schedule(&memo->super.exchange.timeout, _on_response_timeout,
                                CONFIG_UNICOAP_TIMEOUT_CLIENT_RESPONSE_MS);
     }
+
+    ipv6_addr_t addr;
+    memcpy(addr.u8, endpoint->_tl_ep.addr.ipv6, 16);
+
+    if (endpoint->_tl_ep.family == AF_INET6 && ipv6_addr_is_multicast(&addr)) {
+         flags &= UNICOAP_CLIENT_FLAG_MULTICAST;
+
+        if (memo) {
+            unicoap_event_schedule(&memo->super.multicast.timeout, _on_multicast_response_timeout,
+                                   CONFIG_UNICOAP_TIMEOUT_CLIENT_MULTICAST_RESPONSE_MS);
+        }
+
+        if (flags == UNICOAP_CLIENT_FLAG_RELIABLE) {
+            _CLIENT_DEBUG("error trying to send reliable datagram via multicastn");
+            unicoap_client_callback_failure(memo, -EINVAL);
+            goto error;
+        }
+    }
+
     /* TODO: OSCORE */
     if ((res = unicoap_client_send_request_part(&packet, memo, flags)) < 0) {
         goto error;

@@ -128,6 +128,9 @@ static void _deinit_client(unicoap_client_memo_t* memo) {
     memo->callback._any = NULL;
     memo->callback_arg = NULL;
     memo->flags = 0;
+    unicoap_event_cancel(&memo->super.exchange.timeout);
+    unicoap_event_cancel(&memo->super.multicast.timeout);
+
 #if IS_ACTIVE(CONFIG_UNICOAP_CLIENT_CANCELLABLE)
     memo->reference_id = 0;
 #endif
